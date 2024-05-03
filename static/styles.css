@@ -1,0 +1,113 @@
+body, html {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+#mapid { 
+    height: 100%;
+    width: 100%;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #f0f0f0;
+}
+h1 {
+    text-align: center;
+    margin-bottom: 50px;
+}
+form {
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0px 0px 10px 0px rgba(0,0,0,0.1);
+}
+label {
+    display: block;
+    margin-bottom: 10px;
+}
+input[type="text"] {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 20px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+}
+button {
+    padding: 10px 20px;
+    background-color: #007BFF;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+button:hover {
+    background-color: #0056b3;
+}
+
+#formContainer h1 {
+    font-size: 16px;
+    margin-right: 20px; /* Adjust this value to change the size of the title text */
+}
+
+#formContainer {
+    position: absolute;
+    bottom: 1px;
+    left: 10px;
+    z-index: 1000;
+    padding: 20px;
+    border-radius: 8px;
+    height: 50px;
+    width: 1000px; /* Add this line */
+    display: flex;
+    justify-content: flex-start; /* Change this to flex-start */
+    align-items: flex-end; 
+}
+
+#waypointForm {
+    display: flex; /* Add this line */
+    justify-content: space-between;
+    padding: 25px;
+    height: 45px;
+    width: 500px; 
+}
+
+#waypointForm button {
+    padding: 10px;
+    background-color: #007BFF;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    height: 60px;
+}
+
+#waypointForm button:hover {
+    background-color: #0056b3;
+}
+
+.waypoint {
+    display: flex;
+    flex-direction: column;
+    margin-right: 20px; /* Add this line */
+}
+
+.waypoint select {
+    width: 100px;  /* Adjust as needed */
+    height: 30px; 
+    border-radius: 5px;
+    border: 1px solid #ccc; /* Adjust as needed */
+}
+
+.waypoint input {
+    margin-bottom: 20px; /* Add this line */
+    height: 5px; /* Add this line */
+    width: 100px; 
+}

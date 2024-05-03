@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Airplane Movement Demo</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+</head>
+<body>
+    <div id="mapid"></div>
+
+    <div id="formContainer">
+        <form id="waypointForm" action="/calculate_route" method="post">
+            <div class="waypoint">
+                <label for="waypoint1">Start waypoint:</label>
+                <input type="text" id="waypoint1" name="start_node" required>
+            </div>
+            <div class="waypoint">
+                <label for="waypoint2">Goal waypoint:</label>
+                <input type="text" id="waypoint2" name="goal_node"required>
+            </div>
+            <div class="waypoint">
+                <label for="aircraft_type">Aircraft Type:</label>
+                <select id="aircraft_type" name="aircraft_type" required>
+                    <option value="small">Small</option>
+                    <option value="commercial">Commercial</option>
+                </select>
+            </div>
+            <button type="submit">Plan Route</button>
+        </form>
+    </div>
+
+    <div id="overlay" style="display: none; position: fixed; left: 0px; top: 0px; width:100%; height:100%; z-index: 1000; background-color: rgba(128, 128, 128, 0.5);">
+        <img id="loading" src="{{ url_for('static', filename='loading.gif') }}" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 50px; height: 50px;" />
+    </div>
+
+    <script>
+        var mymap = L.map('mapid').setView([51.505, -0.09], 4); // You can change the coordinates and zoom level
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(mymap);
+
+        var airplaneIconUrl = "{{ url_for('static', filename='plane.png') }}";
+
+        var airplaneIcon = L.icon({
+            iconUrl: airplaneIconUrl, // Path to your airplane icon
+            iconSize: [50, 50], // Size of the icon
+            iconAnchor: [25, 25], // Anchor point of the icon
+        });
+
+        document.getElementById('waypointForm').addEventListener('submit', function(event) {
+        event.preventDefault();
+        var start_node = document.getElementById('waypoint1').value;
+        var goal_node = document.getElementById('waypoint2').value;
+        var aircraft_type = document.getElementById('aircraft_type').value;
+
+        document.getElementById('overlay').style.display = 'block';
+        fetch('/calculate_route', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: 'start_node=' + encodeURIComponent(start_node) + '&goal_node=' + encodeURIComponent(goal_node) + '&aircraft_type=' + encodeURIComponent(aircraft_type)
+        })
+        .then(response => response.json())
+        .then(data => {
+            var pathsWithFuel = data.paths;
+            var colors = ['red', 'blue', 'green', 'yellow', 'purple'];  // Define as many colors as you need
+            // Draw the paths on the map
+            for (var i = 0; i < pathsWithFuel.length; i++) {
+                var pathWithFuel = pathsWithFuel[i];
+                var path = pathWithFuel.path;  // The list of waypoints
+                var fuel = pathWithFuel.fuel_consumption;  // The fuel value
+                var distance = pathWithFuel.distance;  // The distance of the path
+                var names = pathWithFuel.names.join(', ');
+
+                var polylinePoints = path.map(waypoint => waypoint.coordinates);
+                var polylineColor = colors[i % colors.length];  // Cycle through colors
+                var polyline = L.polyline(polylinePoints, {color: polylineColor, weight: 3}).addTo(mymap);  // Set the original weight to 3
+                var highlightedPolyline = null;
+                var highlightedPolylineColor = null;
+                var highlightedPolylineWeight = null;
+                var highlightedPolylineDash = null;
+                var highlightedPolylineOpacity = null;
+
+                polyline.options.originalColor = polylineColor; 
+                polyline.options.originalWeight = 3;
+                polyline.options.originalDash = '0, 0';
+                polyline.options.originalOpacity = 1;
+
+                polyline.bindPopup(`
+                    <b>Waypoints:</b> ${names}<br>
+                    <b>Fuel Consumption:</b> ${fuel}<br>
+                    <b>Distance:</b> ${distance}
+                `);
+
+                polyline.on('click', function() {
+                    // If there's a highlighted polyline, revert its color and weight
+                    if (highlightedPolyline) {
+                        highlightedPolyline.setStyle({
+                            color: highlightedPolyline.options.originalColor,
+                            weight: highlightedPolyline.options.originalWeight,  // Revert to the original weight
+                            dashArray: highlightedPolyline.options.originalDash,  // Revert to the original dash pattern
+                            highlightedPolylineOpacity: highlightedPolyline.options.originalOpacity  // Revert to the original opacity   
+                        });
+                    }
+
+                    // Highlight the clicked polyline
+                    highlightedPolyline = this;
+                        this.setStyle({
+                            color: this.options.originalColor, // Keep the original color
+                            weight: 7,  // Increase the weight to make the polyline thicker
+                            opacity: 0.8,  // Decrease the opacity to make the polyline semi-transparent
+                            dashArray: '10, 10'  // Add a dashed pattern
+                        });
+                    });
+
+                for (var j = 0; j < path.length; j++) {
+                    var waypoint = path[j];
+                    var marker = L.marker(waypoint.coordinates).addTo(mymap);
+                    marker.bindPopup('<b>Name:</b> ' + waypoint.name + '<br><b>Coordinates:</b> ' + waypoint.coordinates.join(', ') + '<br><b>FRA Zone:</b> ' + waypoint.fra_zone + '<br><b>Altitude:</b> ' + waypoint.altitude + '<br><b>Fuel Consumption:</b> ' + fuel);
+                }
+            }
+            document.getElementById('overlay').style.display = 'none'; // Hide loading spinner
+            // Add the airplane at the start node
+            var start_coordinates = pathsWithFuel[0].path[0].coordinates;
+            var airplaneMarker = L.marker(start_coordinates, {icon: airplaneIcon}).addTo(mymap);
+        });
+    });
+
+    </script>
+</body>
+</html>
